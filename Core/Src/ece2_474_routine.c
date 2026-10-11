@@ -49,9 +49,38 @@ void ece2_474_init(void)
 }
 
 /* 메인 루프에서 반복해서 호출됩니다. */
+/* 메인 루프에서 반복해서 호출됩니다. */
+/* 점멸할 LED 핀입니다. 과제2에서는 아래 두 줄만 GPIO_OUT1_ece2로 바꿉니다. */
+#define BLINK_PORT GPIO_OUT1_ece2_GPIO_Port
+#define BLINK_PIN  GPIO_OUT1_ece2_Pin
+
+static const uint32_t interval_ms[4] = {1000U, 2000U, 4000U, 8000U};
+
+/* 메인 루프에서 반복해서 호출됩니다. */
 void polling_routine(void)
 {
-    /* 실습 코드 작성 */
+    static uint8_t  idx = 0;
+    static uint32_t last_ms = 0;
+    static GPIO_PinState previous = GPIO_PIN_RESET;
+    static uint32_t last_press_ms = 0;
+
+    GPIO_PinState current = HAL_GPIO_ReadPin(BUTTON_ece2_GPIO_Port, BUTTON_ece2_Pin);
+    uint32_t now_ms = HAL_GetTick();
+
+    if (current == GPIO_PIN_SET && previous == GPIO_PIN_RESET
+        && now_ms - last_press_ms >= 200U)
+    {
+        last_press_ms = now_ms;
+        idx = (idx + 1) % 4;   /* 1→2→4→8→1초 */
+        last_ms = now_ms;      /* 새 간격을 처음부터 다시 셈 */
+    }
+    previous = current;
+
+    if (now_ms - last_ms >= interval_ms[idx])
+    {
+        last_ms += interval_ms[idx];
+        HAL_GPIO_TogglePin(BLINK_PORT, BLINK_PIN);
+    }
 }
 
 /* 1. 사용자 버튼 PC13을 눌렀을 때 호출됩니다. 우선순위: 7.
